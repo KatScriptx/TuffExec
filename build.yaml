@@ -1,0 +1,19 @@
+name: Build Tweak
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: macos-latest # Theos builds best on macOS
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Theos
+        run: |
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+
+      - name: Build Tweak
+        run: |
+          export THEOS=/opt/theos
+          make package FINALPACKAGE=1 TWEAK_NAME=TuffExec
