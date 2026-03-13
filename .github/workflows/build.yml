@@ -10,25 +10,36 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Setup Theos
         uses: Randomblock1/theos-action@v1
         with:
-          # Full direct links to Theos and patched SDKs
           theos-src: 'https://github.com/theos/theos'
           theos-sdks: 'https://github.com/theos/sdks'
           theos-sdks-branch: 'master'
 
-      - name: Build Dylib
+      - name: Build Tweak
         run: |
-          # 'make all' compiles the code without creating a .deb package
+          # 1. Compile the tweak for sideloading
           make all FINALPACKAGE=1 TWEAK_NAME=TuffExec
+          
+          # 2. Create an output folder for ESign
+          mkdir -p final_output
+          cp .theos/obj/TuffExec.dylib final_output/
+          
+          # 3. Locate and copy libsubstrate.dylib from the Theos environment
+          # Theos stores these in vendor/lib or lib depending on the version
+          if [ -d "$THEOS/vendor/lib" ]; then
+            cp "$THEOS/vendor/lib/libsubstrate.dylib" final_output/
+          else
+            cp "$THEOS/lib/libsubstrate.dylib" final_output/
+          fi
 
-      - name: Upload Artifact
+      - name: Upload Sideload Pack
         uses: actions/upload-artifact@v4
         with:
-          name: TuffExec-Dylib
-          # Path to the raw compiled binary inside the hidden .theos folder
-          path: .theos/obj/TuffExec.dylib
+          name: TuffExec-Sideload-Pack
+          # This uploads BOTH dylibs in one zip
+          path: final_output/*
