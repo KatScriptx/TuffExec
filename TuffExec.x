@@ -34,9 +34,6 @@ static luau_load_fn rbx_luau_load = NULL;
 static lua_pcall_fn rbx_lua_pcall = NULL;
 static lua_pushstring_fn rbx_lua_pushstring = NULL;
 static lua_setglobal_fn rbx_lua_setglobal = NULL;
-static lua_newthread_fn rbx_lua_newthread = NULL;
-static lua_gettop_fn rbx_lua_gettop = NULL;
-static lua_settop_fn rbx_lua_settop = NULL;
 
 // Global Lua state (will be captured from Roblox)
 static lua_State* globalLuaState = NULL;
@@ -48,15 +45,6 @@ static uintptr_t robloxBaseAddress = 0;
 // MEMORY SCANNING & FUNCTION FINDING
 // ============================================
 
-static uintptr_t findRobloxBaseAddress(void) {
-    for (uint32_t i = 0; i < _dyld_image_count(); i++) {
-        const char* imageName = _dyld_get_image_name(i);
-        if (imageName && strstr(imageName, "RobloxPlayer")) {
-            return (uintptr_t)_dyld_get_image_header(i);
-        }
-    }
-    return 0;
-}
 
 
 // Pattern scanning for function offsets
@@ -551,3 +539,4 @@ static bool executeLuauScript(const char* script) {
         });
     });
 }
+
