@@ -1,17 +1,17 @@
+# Target and Architectures
 TARGET := iphone:clang:latest:13.0
 ARCHS = arm64 arm64e
 
 include $(THEOS)/makefiles/common.mk
 
-# MUST match TuffExec.plist filename exactly
+# TWEAK_NAME must match your TuffExec.plist filename exactly
 TWEAK_NAME = TuffExec
 
-TuffExec_FILES = TuffExec.x
-TuffExec_FRAMEWORKS = UIKit Foundation CoreGraphics QuartzCore
-TuffExec_LIBRARIES = dl
-TuffExec_CFLAGS = -fobjc-arc -Wno-deprecated-declarations
+$(TWEAK_NAME)_FILES = TuffExec.x
+$(TWEAK_NAME)_FRAMEWORKS = UIKit Foundation CoreGraphics QuartzCore
+$(TWEAK_NAME)_LIBRARIES = dl
+$(TWEAK_NAME)_CFLAGS = -fobjc-arc -Wno-deprecated-declarations
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
-after-install::
-	install.exec "killall -9 RobloxMobile" || true
+# Removed after-install because GitHub Actions only handles the build
