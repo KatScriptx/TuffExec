@@ -1,11 +1,9 @@
 TARGET := iphone:clang:latest:13.0
 ARCHS = arm64 arm64e
-TuffExec_FRAMEWORKS = UIKit Foundation CoreGraphics QuartzCore
-
 
 include $(THEOS)/makefiles/common.mk
 
-# Updated to match your "Name" and Package info
+# Matches TuffExec.plist exactly
 TWEAK_NAME = TuffExec
 
 $(TWEAK_NAME)_FILES = TuffExec.x
