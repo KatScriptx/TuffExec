@@ -140,10 +140,10 @@ static bool executeLuauScript(const char* script) {
         if (!window) {
             window = [UIApplication sharedApplication].windows.firstObject;
         }
+        if ([window viewWithTag:1337]) return;
 
         MoonLogoButton *btn = [[MoonLogoButton alloc] initWithFrame:CGRectMake(50, 150, 60, 60)];
-        btn.backgroundColor = [UIColor grayColor];
-        btn.layer.cornerRadius = 30;
+        btn.tag = 1337;
 
         [btn addTarget:NSClassFromString(@"TuffExecUI") 
                 action:NSSelectorFromString(@"show") 
@@ -152,10 +152,6 @@ static bool executeLuauScript(const char* script) {
         [window addSubview:btn];
     });
 }
-
-@end
-
-
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
@@ -168,10 +164,7 @@ static bool executeLuauScript(const char* script) {
 }
 
 - (void)createMoonLogo {
-    // Moon circle
     UIBezierPath *moonPath = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(5, 5, 50, 50)];
-    
-    // Crescent cutout
     UIBezierPath *cutout = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(15, 5, 45, 45)];
     [moonPath appendPath:cutout];
     moonPath.usesEvenOddFillRule = YES;
@@ -180,18 +173,11 @@ static bool executeLuauScript(const char* script) {
     self.moonLayer.path = moonPath.CGPath;
     self.moonLayer.fillColor = [UIColor whiteColor].CGColor;
     self.moonLayer.fillRule = kCAFillRuleEvenOdd;
-    self.moonLayer.strokeColor = [UIColor whiteColor].CGColor;
-    self.moonLayer.lineWidth = 2;
     [self.layer addSublayer:self.moonLayer];
     
-    // Glow layer
     self.glowLayer = [CAShapeLayer layer];
     self.glowLayer.path = moonPath.CGPath;
-    self.glowLayer.fillColor = [UIColor clearColor].CGColor;
-    self.glowLayer.strokeColor = [UIColor whiteColor].CGColor;
-    self.glowLayer.lineWidth = 4;
     self.glowLayer.shadowColor = [UIColor whiteColor].CGColor;
-    self.glowLayer.shadowOffset = CGSizeMake(0, 0);
     self.glowLayer.shadowRadius = 10;
     self.glowLayer.shadowOpacity = 0.8;
     [self.layer insertSublayer:self.glowLayer below:self.moonLayer];
@@ -208,6 +194,7 @@ static bool executeLuauScript(const char* script) {
 }
 
 @end
+
 
 // ============================================
 // EXECUTOR UI
