@@ -1,0 +1,10 @@
+Package: com.tuffexec.pro
+Name: Tuff Exec Pro
+Version: 3.0.0
+Architecture: iphoneos-arm
+Description: Professional Roblox executor with RakNet desync, executor functions, and anti-detection
+Homepage: https://tuffexec.pro
+Maintainer: Tuff Dev Team
+Author: Tuff Dev Team
+Section: Tweaks
+Depends: mobilesubstrate, firmware (>= 13.0)
