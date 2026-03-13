@@ -86,17 +86,22 @@ static void initializeLuauFunctions(void) {
         
         if (foundAddr) {
             rbx_luau_load = (luau_load_fn)foundAddr;
-            
-            // Show Alert on iPhone to confirm it worked!
+             // Show Alert on iPhone to confirm it worked!
             dispatch_async(dispatch_get_main_queue(), ^{
-                UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"TUFF Executor" message:@"AOB Success: Found luau_load!" preferredStyle:1];
-                [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:0 handler:nil]];
-                [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alert animated:YES completion:nil];
-            });
-        }
-    }
+                UIWindow *window = [UIApplication sharedApplication].keyWindow;
+                if (!window) window = [UIApplication sharedApplication].windows.firstObject;
+                
+                if (window.rootViewController) {
+                    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"TUFF Executor" message:@"AOB Success: Found luau_load!" preferredStyle:1];
+                    [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:0 handler:nil]];
+                    [window.rootViewController presentViewController:alert animated:YES completion:nil];
+                }
+            }); 
+        } 
+    } 
 }
- 
+
+
 
 static bool executeLuauScript(const char* script) {
     if (!globalLuaState || !rbx_luau_load || !rbx_lua_pcall) {
@@ -136,22 +141,26 @@ static bool executeLuauScript(const char* script) {
 
 + (void)show {
     dispatch_async(dispatch_get_main_queue(), ^{
-        UIWindow *window = [UIApplication sharedApplication].keyWindow;
-        if (!window) {
-            window = [UIApplication sharedApplication].windows.firstObject;
+        UIWindow *window = [[UIApplication sharedApplication] keyWindow];
+        if (!window) window = [[[UIApplication sharedApplication] windows] firstObject];
+
+        // SAFETY CHECK: If no window exists yet, wait 1 second and try again
+        if (!window || !window.rootViewController) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                [self show]; 
+            });
+            return;
         }
+
         if ([window viewWithTag:1337]) return;
 
         MoonLogoButton *btn = [[MoonLogoButton alloc] initWithFrame:CGRectMake(50, 150, 60, 60)];
         btn.tag = 1337;
-
-        [btn addTarget:NSClassFromString(@"TuffExecUI") 
-                action:NSSelectorFromString(@"show") 
-      forControlEvents:UIControlEventTouchUpInside];
-
+        [btn addTarget:NSClassFromString(@"TuffExecUI") action:NSSelectorFromString(@"show") forControlEvents:UIControlEventTouchUpInside];
         [window addSubview:btn];
     });
 }
+
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
