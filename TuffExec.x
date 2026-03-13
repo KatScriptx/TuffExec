@@ -1,6 +1,7 @@
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
 #import <sys/syscall.h>
+#import <sys/sysctl.h>
 #import <dlfcn.h>
 #import <mach/mach.h>
 #import <objc/runtime.h>
