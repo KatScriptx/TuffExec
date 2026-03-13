@@ -129,9 +129,33 @@ static bool executeLuauScript(const char* script) {
 @interface MoonLogoButton : UIButton
 @property (nonatomic, strong) CAShapeLayer *moonLayer;
 @property (nonatomic, strong) CAShapeLayer *glowLayer;
++ (void)show;
 @end
 
 @implementation MoonLogoButton
+
++ (void)show {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UIWindow *window = [UIApplication sharedApplication].keyWindow;
+        if (!window) {
+            window = [UIApplication sharedApplication].windows.firstObject;
+        }
+
+        MoonLogoButton *btn = [[MoonLogoButton alloc] initWithFrame:CGRectMake(50, 150, 60, 60)];
+        btn.backgroundColor = [UIColor grayColor];
+        btn.layer.cornerRadius = 30;
+
+        [btn addTarget:NSClassFromString(@"TuffExecUI") 
+                action:NSSelectorFromString(@"show") 
+      forControlEvents:UIControlEventTouchUpInside];
+
+        [window addSubview:btn];
+    });
+}
+
+@end
+
+
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
