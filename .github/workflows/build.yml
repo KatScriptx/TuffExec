@@ -2,30 +2,33 @@ name: Build Tweak
 
 on:
   push:
-    branches: [ main ]  # If your default branch is 'master', change this to master
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-latest  # MUST be macOS for iOS SDKs
+    runs-on: macos-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive # Helpful if you use external libraries
 
       - name: Setup Theos
         uses: Randomblock1/theos-action@v1
         with:
+          # Full direct links to Theos and patched SDKs
           theos-src: 'https://github.com/theos/theos'
           theos-sdks: 'https://github.com/theos/sdks'
+          theos-sdks-branch: 'master'
 
       - name: Build Dylib
         run: |
+          # 'make all' compiles the code without creating a .deb package
           make all FINALPACKAGE=1 TWEAK_NAME=TuffExec
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: TuffExec-Dylib
+          # Path to the raw compiled binary inside the hidden .theos folder
           path: .theos/obj/TuffExec.dylib
