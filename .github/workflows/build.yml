@@ -1,27 +1,30 @@
-name: Makefile CI
+name: Build Tweak
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: configure
-      run: ./configure
+      - name: Setup Theos
+        uses: Randomblock1/theos-action@v1
+        with:
+          theos-src: 'https://github.com'
+          theos-sdks: 'https://github.com'
 
-    - name: Install dependencies
-      run: make
+      - name: Build Dylib
+        run: |
+          make all FINALPACKAGE=1 TWEAK_NAME=TuffExec
 
-    - name: Run check
-      run: make check
-
-    - name: Run distcheck
-      run: make distcheck
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TuffExec-Dylib
+          path: .theos/obj/TuffExec.dylib
