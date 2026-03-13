@@ -561,6 +561,6 @@ static bool executeLuauScript(const char* script) {
             [MoonLogoButton show];
             NSLog(@"[TUFF EXEC] Moon button shown - tap to open executor");
         });
-    }):
+    });
 }
 
