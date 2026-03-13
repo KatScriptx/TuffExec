@@ -1,5 +1,7 @@
 TARGET := iphone:clang:latest:13.0
 ARCHS = arm64 arm64e
+TuffExec_FRAMEWORKS = UIKit Foundation CoreGraphics QuartzCore
+
 
 include $(THEOS)/makefiles/common.mk
 
