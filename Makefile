@@ -6,7 +6,7 @@ TuffExec_FRAMEWORKS = UIKit Foundation CoreGraphics QuartzCore
 include $(THEOS)/makefiles/common.mk
 
 # Updated to match your "Name" and Package info
-TWEAK_NAME = TuffExecPro
+TWEAK_NAME = TuffExec
 
 $(TWEAK_NAME)_FILES = TuffExec.x
 $(TWEAK_NAME)_FRAMEWORKS = UIKit Foundation CoreGraphics QuartzCore
