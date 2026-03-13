@@ -2,22 +2,23 @@ name: Build Tweak
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main ]  # If your default branch is 'master', change this to master
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-latest
-
+    runs-on: macos-latest  # MUST be macOS for iOS SDKs
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive # Helpful if you use external libraries
 
       - name: Setup Theos
         uses: Randomblock1/theos-action@v1
         with:
-          theos-src: 'https://github.com'
-          theos-sdks: 'https://github.com'
+          theos-src: 'https://github.com/theos/theos'
+          theos-sdks: 'https://github.com/theos/sdks'
 
       - name: Build Dylib
         run: |
