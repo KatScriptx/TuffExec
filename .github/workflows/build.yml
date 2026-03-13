@@ -1,4 +1,4 @@
-name: Build Tweak
+name: Build TuffExec
 
 on:
   push:
@@ -16,32 +16,25 @@ jobs:
       - name: Setup Theos
         uses: Randomblock1/theos-action@v1
         with:
+          # THESE ARE THE FULL, UNEDITED REPOSITORY PATHS:
           theos-src: 'https://github.com/theos/theos'
           theos-sdks: 'https://github.com/theos/sdks'
 
-      - name: Build Tweak
+      - name: Build and Package
         run: |
-          # 1. Build the dylib
+          # 1. Compile the TuffExec code
           make all FINALPACKAGE=1 TWEAK_NAME=TuffExec
           
-          # 2. Create an output folder
+          # 2. Create the output folder for ESign
           mkdir -p final_output
-          cp .theos/obj/TuffExec.dylib final_output/
+          cp .theos/obj/TuffExec.dylib final_output/TuffExec.dylib
           
-          # 3. Robust Search for libsubstrate.dylib
-          # This looks through the entire Theos folder for the file automatically
-          SUBSTRATE_PATH=$(find $THEOS -name "libsubstrate.dylib" | head -n 1)
-          
-          if [ -f "$SUBSTRATE_PATH" ]; then
-            echo "Found substrate at: $SUBSTRATE_PATH"
-            cp "$SUBSTRATE_PATH" final_output/
-          else
-            echo "Warning: libsubstrate.dylib not found in Theos folder."
-            echo "You may need to download it manually for ESign."
-          fi
+          # 3. DOWNLOAD THE RAW SUBSTRATE (FULL BISHOPFOX RAW LINK)
+          # Note: We use /raw/ instead of /blob/ so the runner gets the BINARY, not the WEBSITE
+          curl -L "https://github.com/BishopFox/theos-jailed/raw/master/lib/libsubstrate.dylib" -o final_output/libsubstrate.dylib
 
       - name: Upload Sideload Pack
         uses: actions/upload-artifact@v4
         with:
           name: TuffExec-Sideload-Pack
-          path: final_output/*
+          path: final_output/
