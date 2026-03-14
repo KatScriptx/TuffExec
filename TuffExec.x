@@ -1,4 +1,5 @@
 #import <UIKit/UIKit.h>
+#import <substrate.h>
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
 #import <mach-o/dyld.h>
