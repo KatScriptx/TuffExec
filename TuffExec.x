@@ -5,14 +5,6 @@
 #import <dlfcn.h>
 #import <sys/syscall.h>
 #import <mach/mach.h>
-#import <mach-o/getsect.h>
-
-
-// ============================================
-// YOUR SIGNATURE FROM THE IMAGE
-// ============================================
-static const unsigned char luau_load_sig[] = {0xFD, 0x7B, 0x02, 0xA9, 0xFD, 0x83, 0x00, 0x91, 0x68, 0x2C, 0x00, 0xD0, 0x08, 0x75, 0x43, 0xF9};
-static const char* luau_load_mask = "xxxxxxxxxxxxxxxx";
 
 // ============================================
 // LUAU VM DEFINITIONS
@@ -34,6 +26,9 @@ static luau_load_fn rbx_luau_load = NULL;
 static lua_pcall_fn rbx_lua_pcall = NULL;
 static lua_pushstring_fn rbx_lua_pushstring = NULL;
 static lua_setglobal_fn rbx_lua_setglobal = NULL;
+static lua_newthread_fn rbx_lua_newthread = NULL;
+static lua_gettop_fn rbx_lua_gettop = NULL;
+static lua_settop_fn rbx_lua_settop = NULL;
 
 // Global Lua state (will be captured from Roblox)
 static lua_State* globalLuaState = NULL;
@@ -45,7 +40,24 @@ static uintptr_t robloxBaseAddress = 0;
 // MEMORY SCANNING & FUNCTION FINDING
 // ============================================
 
+static uintptr_t findRobloxBaseAddress(void) {
+    for (uint32_t i = 0; i < _dyld_image_count(); i++) {
+        const char* imageName = _dyld_get_image_name(i);
+        if (imageName && strstr(imageName, "RobloxPlayer")) {
+            return (uintptr_t)_dyld_get_image_header(i);
+        }
+    }
+    return 0;
+}
 
+static void* findSymbolInImage(const char* symbolName) {
+    void* handle = dlopen(NULL, RTLD_NOW);
+    if (!handle) return NULL;
+    
+    void* symbol = dlsym(handle, symbolName);
+    dlclose(handle);
+    return symbol;
+}
 
 // Pattern scanning for function offsets
 static uintptr_t findPattern(uintptr_t start, size_t size, const unsigned char* pattern, const char* mask) {
@@ -65,41 +77,45 @@ static uintptr_t findPattern(uintptr_t start, size_t size, const unsigned char* 
     }
     return 0;
 }
-static void initializeLuauFunctions(void) {
-    // 1. Find Roblox Address
-    for (uint32_t i = 0; i < _dyld_image_count(); i++) {
-        const char* name = _dyld_get_image_name(i);
-        if (name && strstr(name, "/Roblox.app/Roblox")) {
-            robloxBaseAddress = (uintptr_t)_dyld_get_image_header(i);
-            break;
-        }
-    }
 
-    if (!robloxBaseAddress) return;
+static int (*orig_lua_gettop)(lua_State* L);
+static int hooked_lua_gettop(lua_State* L) {
+    if (L != NULL) globalLuaState = L;
+    return orig_lua_gettop(L);
 
-    // 2. Scan the __TEXT segment for your signature
-    unsigned long size = 0;
-    uintptr_t textStart = (uintptr_t)getsectiondata((struct mach_header_64*)robloxBaseAddress, "__TEXT", "__text", &size);
-
-    if (textStart) {
-        uintptr_t foundAddr = findPattern(textStart, size, luau_load_sig, luau_load_mask);
-        
-        if (foundAddr) {
-            rbx_luau_load = (luau_load_fn)foundAddr;
-             // Show Alert on iPhone to confirm it worked!
-            dispatch_async(dispatch_get_main_queue(), ^{
-                UIWindow *window = [UIApplication sharedApplication].keyWindow;
-                if (!window) window = [UIApplication sharedApplication].windows.firstObject;
-                
-                if (window.rootViewController) {
-                    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"TUFF Executor" message:@"AOB Success: Found luau_load!" preferredStyle:1];
-                    [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:0 handler:nil]];
-                    [window.rootViewController presentViewController:alert animated:YES completion:nil];
-                }
-            }); 
-        } 
-    } 
 }
+
+
+static void initializeLuauFunctions(void) {
+    robloxBaseAddress = findRobloxBaseAddress();
+    
+    if (!robloxBaseAddress) {
+        NSLog(@"[TUFF] Failed to find Roblox base address");
+        return;
+    }
+    
+    NSLog(@"[TUFF] Roblox base address: 0x%lx", (unsigned long)robloxBaseAddress);
+    
+    // UPDATED OFFSETS
+    rbx_luau_load = (luau_load_fn)(robloxBaseAddress + 0x0000E3B0);
+    rbx_lua_pcall = (lua_pcall_fn)(robloxBaseAddress + 0x0000E928);
+    rbx_lua_pushstring = (lua_pushstring_fn)(robloxBaseAddress + 0x0000E420);
+    rbx_lua_setglobal = (lua_setglobal_fn)(robloxBaseAddress + 0x0000E950);
+    rbx_lua_newthread = (lua_newthread_fn)(robloxBaseAddress + 0x0000E710);
+    rbx_lua_gettop = (lua_gettop_fn)(robloxBaseAddress + 0x0000E5A8);
+    rbx_lua_settop = (lua_settop_fn)(robloxBaseAddress + 0x0000E590);
+    
+    NSLog(@"[TUFF] Luau functions initialized");
+
+  // SAFE HOOK INSTALL (With 10s delay to bypass anti-cheat checks)
+    if (rbx_lua_gettop) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            MSHookFunction((void*)rbx_lua_gettop, (void*)hooked_lua_gettop, (void**)&orig_lua_gettop);
+            NSLog(@"[TUFF] State capture hook installed with 10s delay");
+        });
+    }
+}
+
 
 
 
@@ -134,33 +150,9 @@ static bool executeLuauScript(const char* script) {
 @interface MoonLogoButton : UIButton
 @property (nonatomic, strong) CAShapeLayer *moonLayer;
 @property (nonatomic, strong) CAShapeLayer *glowLayer;
-+ (void)show;
 @end
 
 @implementation MoonLogoButton
-
-+ (void)show {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        UIWindow *window = [[UIApplication sharedApplication] keyWindow];
-        if (!window) window = [[[UIApplication sharedApplication] windows] firstObject];
-
-        // SAFETY CHECK: If no window exists yet, wait 1 second and try again
-        if (!window || !window.rootViewController) {
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                [self show]; 
-            });
-            return;
-        }
-
-        if ([window viewWithTag:1337]) return;
-
-        MoonLogoButton *btn = [[MoonLogoButton alloc] initWithFrame:CGRectMake(50, 150, 60, 60)];
-        btn.tag = 1337;
-        [btn addTarget:NSClassFromString(@"TuffExecUI") action:NSSelectorFromString(@"show") forControlEvents:UIControlEventTouchUpInside];
-        [window addSubview:btn];
-    });
-}
-
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
@@ -173,7 +165,10 @@ static bool executeLuauScript(const char* script) {
 }
 
 - (void)createMoonLogo {
+    // Moon circle
     UIBezierPath *moonPath = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(5, 5, 50, 50)];
+    
+    // Crescent cutout
     UIBezierPath *cutout = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(15, 5, 45, 45)];
     [moonPath appendPath:cutout];
     moonPath.usesEvenOddFillRule = YES;
@@ -182,11 +177,18 @@ static bool executeLuauScript(const char* script) {
     self.moonLayer.path = moonPath.CGPath;
     self.moonLayer.fillColor = [UIColor whiteColor].CGColor;
     self.moonLayer.fillRule = kCAFillRuleEvenOdd;
+    self.moonLayer.strokeColor = [UIColor whiteColor].CGColor;
+    self.moonLayer.lineWidth = 2;
     [self.layer addSublayer:self.moonLayer];
     
+    // Glow layer
     self.glowLayer = [CAShapeLayer layer];
     self.glowLayer.path = moonPath.CGPath;
+    self.glowLayer.fillColor = [UIColor clearColor].CGColor;
+    self.glowLayer.strokeColor = [UIColor whiteColor].CGColor;
+    self.glowLayer.lineWidth = 4;
     self.glowLayer.shadowColor = [UIColor whiteColor].CGColor;
+    self.glowLayer.shadowOffset = CGSizeMake(0, 0);
     self.glowLayer.shadowRadius = 10;
     self.glowLayer.shadowOpacity = 0.8;
     [self.layer insertSublayer:self.glowLayer below:self.moonLayer];
@@ -203,7 +205,6 @@ static bool executeLuauScript(const char* script) {
 }
 
 @end
-
 
 // ============================================
 // EXECUTOR UI
@@ -554,9 +555,8 @@ static bool executeLuauScript(const char* script) {
         
         // Show moon button after initialization
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            [MoonLogoButton show];
+            [MoonButtonOverlay show];
             NSLog(@"[TUFF EXEC] Moon button shown - tap to open executor");
         });
     });
 }
-
