@@ -11,7 +11,7 @@ $(TWEAK_NAME)_LIBRARIES = dl substrate
 
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-unused-variable -Wno-unused-function
 
-# FIXED LDFLAGS - Every linker command needs -Wl,
+# CORRECTED LINKER FLAGS - No spaces after commas!
 $(TWEAK_NAME)_LDFLAGS += -undefined dynamic_lookup
 $(TWEAK_NAME)_LDFLAGS += -Wl,-install_name,@executable_path/Frameworks/$(TWEAK_NAME).dylib
 $(TWEAK_NAME)_LDFLAGS += -Wl,-rpath,@executable_path/Frameworks/
