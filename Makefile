@@ -1,22 +1,23 @@
-TARGET := iphone:clang:latest:13.0
 ARCHS = arm64 arm64e
+TARGET = iphone:clang:latest:13.0
 
 include $(THEOS)/makefiles/common.mk
 
-TWEAK_NAME = TuffExec
+LIBRARY_NAME = OffsetDumper
 
-$(TWEAK_NAME)_FILES = TuffExec.x
-$(TWEAK_NAME)_FRAMEWORKS = UIKit Foundation CoreGraphics QuartzCore
-$(TWEAK_NAME)_LIBRARIES = dl substrate
-$(TWEAK_NAME)_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-unused-function -Wno-unused-variable
+OffsetDumper_FILES = OffsetDumper.x
+OffsetDumper_CFLAGS = -fobjc-arc -Wno-unused-variable
+OffsetDumper_FRAMEWORKS = UIKit Foundation
+OffsetDumper_LIBRARIES = substrate
+OffsetDumper_INSTALL_PATH = /Library/MobileSubstrate/DynamicLibraries
 
+include $(THEOS_MAKE_PATH)/library.mk
 
-# Simplify LDFLAGS to stop the 'unknown option' error
-$(TWEAK_NAME)_LDFLAGS = -undefined dynamic_lookup
+after-build::
+	@echo "✓ OffsetDumper.dylib built"
+	@cp $(THEOS_OBJ_DIR)/OffsetDumper.dylib ./
 
-include $(THEOS_MAKE_PATH)/tweak.mk
-
-# THIS IS THE NUCLEAR FIX: It runs 'install_name_tool' automatically after the build finishes
-after-all::
-	@echo "Fixing library paths..."
-	@install_name_tool -change /Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate @executable_path/Frameworks/libsubstrate.dylib $(THEOS_OBJ_DIR)/$(TWEAK_NAME).dylib
+after-stage::
+	@mkdir -p $(THEOS_STAGING_DIR)/Library/MobileSubstrate/DynamicLibraries
+	@cp $(THEOS_OBJ_DIR)/OffsetDumper.dylib $(THEOS_STAGING_DIR)/Library/MobileSubstrate/DynamicLibraries/
+	@cp OffsetDumper.plist $(THEOS_STAGING_DIR)/Library/MobileSubstrate/DynamicLibraries/
